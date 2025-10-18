@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 /**
- * Comprehensive Accessibility Audit Tool
- * Security-enhanced CLI tool that crawls websites and performs accurate accessibility audits
+ * Compliance Audit Tool
+ * CLI tool that crawls websites and performs accurate accessibility, privacy, and security audits
  */
 
 import { Command } from 'commander';
@@ -214,16 +214,20 @@ async function runAudit(url, options) {
     const reportGenerator = new ReportGenerator(options.output);
     let reports = {};
     
-    if (options.format === 'all' || options.format === 'summary') {
-      reports.summary = await reportGenerator.generateSummaryReport(auditResults, `${auditResults.domain}_summary.md`);
-    }
-    
-    if (options.format === 'all' || options.format === 'detailed') {
-      reports.detailed = await reportGenerator.generateDetailedReport(auditResults, `${auditResults.domain}_detailed.csv`);
-    }
-    
-    if (options.format === 'all' || options.format === 'json') {
-      reports.statistics = await reportGenerator.generateStatisticsReport(auditResults, `${auditResults.domain}_statistics.json`);
+    if (options.format === 'all') {
+      reports = await reportGenerator.generateReports(auditResults, auditResults.domain);
+    } else {
+      if (options.format === 'summary') {
+        reports.summary = await reportGenerator.generateSummaryReport(auditResults, `${auditResults.domain}_summary.md`);
+      }
+      
+      if (options.format === 'detailed') {
+        reports.detailed = await reportGenerator.generateDetailedReport(auditResults, `${auditResults.domain}_detailed.csv`);
+      }
+      
+      if (options.format === 'json') {
+        reports.statistics = await reportGenerator.generateStatisticsReport(auditResults, `${auditResults.domain}_statistics.json`);
+      }
     }
     
     spinner.succeed('Reports generated');

@@ -12,24 +12,49 @@ export class ReportGenerator {
   }
 
   /**
+   * Format current date/time in local timezone as YYYY-MM-DDTHH-mm
+   * @returns {string} Formatted timestamp
+   */
+  formatLocalTimestamp() {
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}_${hours}-${minutes}`;
+  }
+
+  /**
+   * Sanitize domain name by replacing dots with hyphens
+   * @param {string} domain - Domain name to sanitize
+   * @returns {string} Sanitized domain name
+   */
+  sanitizeDomain(domain) {
+    return domain.replace(/\./g, '-');
+  }
+
+  /**
    * Generate all reports
    * @param {Object} auditResults - Complete audit results
    * @param {string} domain - Domain name for file naming
    * @returns {Object} Generated file paths
    */
   async generateReports(auditResults, domain) {
-    await this.ensureOutputDir();
+    const timestamp = this.formatLocalTimestamp();
+    const sanitizedDomain = this.sanitizeDomain(domain);
+    const folderName = `${timestamp}_${sanitizedDomain}_compliance-report`;
+    const filePrefix = `${timestamp}_${sanitizedDomain}_compliance-report`;
     
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const filePrefix = `${domain}_${timestamp}`;
+    const targetDir = await this.ensureOutputDir(folderName);
     
     const reports = {
-      summary: await this.generateSummaryReport(auditResults, `${filePrefix}_summary.md`),
-      detailed: await this.generateDetailedReport(auditResults, `${filePrefix}_detailed.csv`),
-      statistics: await this.generateStatisticsReport(auditResults, `${filePrefix}_statistics.json`)
+      summary: await this.generateSummaryReport(auditResults, `${filePrefix}_summary.md`, targetDir),
+      detailed: await this.generateDetailedReport(auditResults, `${filePrefix}_detailed.csv`, targetDir),
+      statistics: await this.generateStatisticsReport(auditResults, `${filePrefix}_statistics.json`, targetDir)
     };
 
-    console.log(`Reports generated in ${this.outputDir}:`);
+    console.log(`Reports generated in ${targetDir}:`);
     console.log(`- Summary: ${reports.summary}`);
     console.log(`- Detailed: ${reports.detailed}`);
     console.log(`- Statistics: ${reports.statistics}`);
@@ -39,23 +64,27 @@ export class ReportGenerator {
 
   /**
    * Ensure output directory exists
+   * @param {string} subDir - Optional subdirectory to create within output directory
    */
-  async ensureOutputDir() {
+  async ensureOutputDir(subDir = '') {
+    const targetDir = subDir ? path.join(this.outputDir, subDir) : this.outputDir;
     try {
-      await fs.access(this.outputDir);
+      await fs.access(targetDir);
     } catch {
-      await fs.mkdir(this.outputDir, { recursive: true });
+      await fs.mkdir(targetDir, { recursive: true });
     }
+    return targetDir;
   }
 
   /**
    * Generate summary report in Markdown format
    * @param {Object} auditResults - Audit results
    * @param {string} filename - Output filename
+   * @param {string} targetDir - Target directory for the file
    * @returns {string} File path
    */
-  async generateSummaryReport(auditResults, filename) {
-    const filePath = path.join(this.outputDir, filename);
+  async generateSummaryReport(auditResults, filename, targetDir = this.outputDir) {
+    const filePath = path.join(targetDir, filename);
     
     let markdown = `# Accessibility Audit Summary\n\n`;
     markdown += `**Generated:** ${new Date().toLocaleString()}\n`;
@@ -126,10 +155,11 @@ export class ReportGenerator {
    * Generate detailed CSV report
    * @param {Object} auditResults - Audit results
    * @param {string} filename - Output filename
+   * @param {string} targetDir - Target directory for the file
    * @returns {string} File path
    */
-  async generateDetailedReport(auditResults, filename) {
-    const filePath = path.join(this.outputDir, filename);
+  async generateDetailedReport(auditResults, filename, targetDir = this.outputDir) {
+    const filePath = path.join(targetDir, filename);
     
     let csv = 'Page URL,Category,Issue Type,Severity,Element,Description,Recommendation,Status,Evidence\n';
 
@@ -190,10 +220,11 @@ export class ReportGenerator {
    * Generate statistics report in JSON format
    * @param {Object} auditResults - Audit results
    * @param {string} filename - Output filename
+   * @param {string} targetDir - Target directory for the file
    * @returns {string} File path
    */
-  async generateStatisticsReport(auditResults, filename) {
-    const filePath = path.join(this.outputDir, filename);
+  async generateStatisticsReport(auditResults, filename, targetDir = this.outputDir) {
+    const filePath = path.join(targetDir, filename);
     
     const statistics = {
       metadata: {

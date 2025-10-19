@@ -134,6 +134,8 @@ Thumbs.db
 # Project-specific ignores (keep minimal)
 # If you generate any truly local artifacts you don't want in git, add them here.
 FINAL_SUMMARY.md
+app-security-analysis.md
+app-security-checklist.md
 
 # Security and sensitive files
 *.key

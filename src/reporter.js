@@ -114,6 +114,8 @@ export class ReportGenerator {
       const criticalIssues = this.getIssuesBySeverity(auditResults, 'critical');
       criticalIssues.forEach((issue, index) => {
         markdown += `${index + 1}. **${issue.type}** - ${issue.message}\n`;
+        if (issue.id) markdown += `   - **Issue ID**: \
+\`${issue.id}\`\n`;
         
         // Add specific location information if available
         if (issue.context?.selector) {
@@ -141,13 +143,14 @@ export class ReportGenerator {
     const manualReviews = [];
     auditResults.pages.forEach(page => {
       const issues = page.results?.manualReview?.issues || [];
-      issues.forEach(i => manualReviews.push({ ...i, pageUrl: page.url }));
+  issues.forEach(i => { if (!i.ignored) manualReviews.push({ ...i, pageUrl: page.url }); });
     });
     if (manualReviews.length) {
       markdown += `## Manual Review Recommended\n\n`;
       manualReviews.forEach((issue, index) => {
         markdown += `${index + 1}. **${issue.type}** - ${issue.message}\n`;
-        if (issue.context?.selector) markdown += `   - **Location**: \`${issue.context.selector}\`\n`;
+  if (issue.id) markdown += `   - **Issue ID**: \`${issue.id}\`\n`;
+  if (issue.context?.selector) markdown += `   - **Location**: \`${issue.context.selector}\`\n`;
         if (issue.context?.textSample) markdown += `   - **Text**: "${issue.context.textSample}"\n`;
         markdown += `   - **Recommendation**: ${issue.recommendation}\n`;
         markdown += `   - **Page**: ${issue.pageUrl}\n\n`;
@@ -160,6 +163,7 @@ export class ReportGenerator {
       const highPriorityIssues = this.getIssuesBySeverity(auditResults, 'high');
       highPriorityIssues.forEach((issue, index) => {
         markdown += `${index + 1}. **${issue.type}** - ${issue.message}\n`;
+        if (issue.id) markdown += `   - **Issue ID**: \`${issue.id}\`\n`;
         
         // Add specific location information if available
         if (issue.context?.selector) {
@@ -222,7 +226,7 @@ export class ReportGenerator {
     const filePath = path.join(targetDir, filename);
     
     // Updated column order: move Status after Severity
-    const header = ['Page URL','Category','Issue Type','Severity','Status','Element Selector','Element Context','Description','Recommendation','Technical Details'];
+    const header = ['Page URL','Category','Issue Type','Severity','Status','Element Selector','Element Context','Description','Recommendation','Technical Details','Issue ID'];
     const rows = [];
 
     // CSV escaping helper: always quote, double internal quotes, and strip newlines
@@ -234,7 +238,8 @@ export class ReportGenerator {
     // Normalize for deduping (remove zero-width chars, collapse whitespace)
     const normalizeCtx = (s) => String(s ?? '').replace(/[\u200B-\u200D\uFEFF]/g, '').replace(/\s+/g, ' ').trim();
     const buildKey = (row) => {
-      // row order: [url, category, issueType, severity, status, selector, context, description, recommendation, technical]
+      // row order: [url, category, issueType, severity, status, selector, context, description, recommendation, technical, id]
+      // Intentionally EXCLUDE Issue ID and Technical Details from the dedupe key so equivalent rows merge across repeats
       return [
         row[0], row[1], row[2], row[3], row[4], row[5], normalizeCtx(row[6]), row[7], row[8]
       ].join('||');
@@ -330,6 +335,7 @@ export class ReportGenerator {
       // Semantic HTML issues
       if (results.semanticHTML && results.semanticHTML.issues) {
         results.semanticHTML.issues.forEach(issue => {
+          if (issue.ignored) return;
           const rawCategory = 'Semantic HTML';
           const category = wcagCategory(rawCategory, issue.type);
           const issueType = issueLabel(rawCategory, issue.type);
@@ -347,7 +353,8 @@ export class ReportGenerator {
             contextInfo,
             issue.message || '',
             issue.recommendation || '',
-            'HTML Structure'
+            'HTML Structure',
+            issue.id || ''
           ];
           rows.push(row);
         });
@@ -356,7 +363,7 @@ export class ReportGenerator {
   // Color contrast issues
       if (results.colorContrast) {
         results.colorContrast.forEach(contrast => {
-          if (contrast.status === 'FAIL') {
+          if (contrast.status === 'FAIL' && !contrast.ignored) {
             const rawCategory = 'Color Contrast';
             const category = wcagCategory(rawCategory, 'Insufficient Contrast');
             const issueType = issueLabel(rawCategory, 'Insufficient Contrast');
@@ -378,7 +385,8 @@ export class ReportGenerator {
               contextInfo,
               `Contrast ratio: ${contrast.contrastRatio}:1 (required: ${contrast.compliance?.requiredRatio}:1)`,
               'Improve color contrast to meet WCAG AA standards',
-              technicalDetails
+              technicalDetails,
+              contrast.id || ''
             ];
             rows.push(row);
           }
@@ -388,6 +396,7 @@ export class ReportGenerator {
       // Manual review issues
       if (results.manualReview && results.manualReview.issues && results.manualReview.issues.length) {
         results.manualReview.issues.forEach(issue => {
+          if (issue.ignored) return;
           const rawCategory = 'Manual Review';
           const category = wcagCategory(rawCategory, issue.type);
           const issueType = issueLabel(rawCategory, issue.type);
@@ -405,7 +414,8 @@ export class ReportGenerator {
             contextInfo,
             issue.message || '',
             issue.recommendation || '',
-            'Manual review required'
+            'Manual review required',
+            issue.id || ''
           ];
           rows.push(row);
         });
@@ -414,6 +424,7 @@ export class ReportGenerator {
       // ARIA issues
       if (results.ariaLabels && results.ariaLabels.issues) {
         results.ariaLabels.issues.forEach(issue => {
+          if (issue.ignored) return;
           const rawCategory = 'ARIA Labels';
           const category = wcagCategory(rawCategory, issue.type);
           const issueType = issueLabel(rawCategory, issue.type);
@@ -431,7 +442,8 @@ export class ReportGenerator {
             contextInfo,
             issue.message || '',
             issue.recommendation || '',
-            'Interactive Element'
+            'Interactive Element',
+            issue.id || ''
           ];
           rows.push(row);
         });
@@ -440,6 +452,7 @@ export class ReportGenerator {
       // Keyboard navigation issues
       if (results.keyboardNavigation && results.keyboardNavigation.issues) {
         results.keyboardNavigation.issues.forEach(issue => {
+          if (issue.ignored) return;
           const rawCategory = 'Keyboard Navigation';
           const category = wcagCategory(rawCategory, issue.type);
           const issueType = issueLabel(rawCategory, issue.type);
@@ -457,7 +470,8 @@ export class ReportGenerator {
             contextInfo,
             issue.message || '',
             issue.recommendation || '',
-            'Navigation'
+            'Navigation',
+            issue.id || ''
           ];
           rows.push(row);
         });
@@ -466,6 +480,7 @@ export class ReportGenerator {
       // Image issues
       if (results.images && results.images.issues) {
         results.images.issues.forEach(issue => {
+          if (issue.ignored) return;
           const rawCategory = 'Images';
           const category = wcagCategory(rawCategory, issue.type);
           const issueType = issueLabel(rawCategory, issue.type);
@@ -483,7 +498,8 @@ export class ReportGenerator {
             contextInfo,
             issue.message || '',
             issue.recommendation || '',
-            `Image: ${issue.src || 'N/A'}`
+            `Image: ${issue.src || 'N/A'}`,
+            issue.id || ''
           ];
           rows.push(row);
         });
@@ -492,6 +508,7 @@ export class ReportGenerator {
       // Focus management issues
       if (results.focusManagement && results.focusManagement.issues) {
         results.focusManagement.issues.forEach(issue => {
+          if (issue.ignored) return;
           const rawCategory = 'Focus Management';
           const category = wcagCategory(rawCategory, issue.type);
           const issueType = issueLabel(rawCategory, issue.type);
@@ -510,7 +527,8 @@ export class ReportGenerator {
             contextInfo,
             issue.message || '',
             issue.recommendation || '',
-            technicalDetails
+            technicalDetails,
+            issue.id || ''
           ];
           rows.push(row);
         });
@@ -519,6 +537,7 @@ export class ReportGenerator {
       // Touch target issues
       if (results.touchTargets && results.touchTargets.issues) {
         results.touchTargets.issues.forEach(issue => {
+          if (issue.ignored) return;
           const rawCategory = 'Touch Targets';
           const category = wcagCategory(rawCategory, issue.type);
           const issueType = issueLabel(rawCategory, issue.type);
@@ -537,7 +556,8 @@ export class ReportGenerator {
             contextInfo,
             issue.message || '',
             issue.recommendation || '',
-            technicalDetails
+            technicalDetails,
+            issue.id || ''
           ];
           rows.push(row);
         });
@@ -546,6 +566,7 @@ export class ReportGenerator {
       // Focus order issues
       if (results.focusOrder && results.focusOrder.issues) {
         results.focusOrder.issues.forEach(issue => {
+          if (issue.ignored) return;
           const rawCategory = 'Focus Order';
           const category = wcagCategory(rawCategory, issue.type);
           const issueType = issueLabel(rawCategory, issue.type);
@@ -563,7 +584,8 @@ export class ReportGenerator {
             contextInfo,
             issue.message || '',
             issue.recommendation || '',
-            'Tab sequence'
+            'Tab sequence',
+            issue.id || ''
           ];
           rows.push(row);
         });
@@ -572,6 +594,7 @@ export class ReportGenerator {
       // Vision simulation issues
       if (results.visionSimulation && results.visionSimulation.issues) {
         results.visionSimulation.issues.forEach(issue => {
+          if (issue.ignored) return;
           const rawCategory = 'Vision Simulation';
           const category = wcagCategory(rawCategory, issue.type);
           const issueType = issueLabel(rawCategory, issue.type);
@@ -590,7 +613,8 @@ export class ReportGenerator {
             contextInfo,
             issue.message || '',
             issue.recommendation || '',
-            technicalDetails
+            technicalDetails,
+            issue.id || ''
           ];
           rows.push(row);
         });
@@ -612,7 +636,7 @@ export class ReportGenerator {
       // Append Occurrences info to Technical Details
       let tech = row[9] || '';
       if (count > 1) tech = tech ? `${tech} | Occurrences: ${count}` : `Occurrences: ${count}`;
-      const out = [row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], tech];
+      const out = [row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], tech, row[10] || ''];
       lines.push(out.map(esc).join(','));
     }
 
@@ -643,7 +667,8 @@ export class ReportGenerator {
         url: page.url,
         title: page.title,
         summary: page.results.summary,
-        issues: this.countIssuesBySeverity(page.results)
+        issues: this.countIssuesBySeverity(page.results),
+        issuesDetailed: this.collectIssuesDetailed(page.results, page.url)
       })),
       trends: this.calculateTrends(auditResults)
     };
@@ -717,6 +742,7 @@ export class ReportGenerator {
     categories.forEach(category => {
       if (category && category.issues) {
         category.issues.forEach(issue => {
+          if (issue.ignored) return;
           total++;
           if (issue.severity === 'critical') {
             critical++;
@@ -734,7 +760,7 @@ export class ReportGenerator {
     // Count color contrast failures
     if (pageResults.colorContrast) {
       pageResults.colorContrast.forEach(contrast => {
-        if (contrast.status === 'FAIL') {
+        if (contrast.status === 'FAIL' && !contrast.ignored) {
           total++;
           critical++;
         } else if (contrast.status === 'PASS') {
@@ -770,7 +796,7 @@ export class ReportGenerator {
       categories.forEach(category => {
         if (category && category.issues) {
           category.issues.forEach(issue => {
-            if (issue.severity === severity) {
+            if (issue.severity === severity && !issue.ignored) {
               issues.push({ ...issue, pageUrl: page.url });
             }
           });
@@ -780,7 +806,7 @@ export class ReportGenerator {
       // Check color contrast failures
       if (results.colorContrast) {
         results.colorContrast.forEach(contrast => {
-          if (contrast.status === 'FAIL' && severity === 'critical') {
+          if (contrast.status === 'FAIL' && !contrast.ignored && severity === 'critical') {
             issues.push({
               type: 'color_contrast',
               severity: 'critical',
@@ -850,6 +876,78 @@ export class ReportGenerator {
   }
 
   /**
+   * Collect detailed issues with IDs for JSON statistics
+   * Skips ignored items
+   */
+  collectIssuesDetailed(pageResults, pageUrl) {
+    const items = [];
+
+    const pushItem = (obj) => items.push(obj);
+
+    const addCat = (rawCategory, list = []) => {
+      list.forEach(issue => {
+        if (issue.ignored) return;
+        pushItem({
+          id: issue.id || '',
+          pageUrl,
+          category: rawCategory,
+          type: issue.type || 'unspecified',
+          severity: issue.severity || 'low',
+          status: 'FAIL',
+          selector: issue.context?.selector || issue.elementDetails?.selector || issue.element?.context?.selector || '',
+          description: issue.message || '',
+          recommendation: issue.recommendation || ''
+        });
+      });
+    };
+
+    if (pageResults.semanticHTML?.issues) addCat('Semantic HTML', pageResults.semanticHTML.issues);
+    if (pageResults.ariaLabels?.issues) addCat('ARIA Labels', pageResults.ariaLabels.issues);
+    if (pageResults.keyboardNavigation?.issues) addCat('Keyboard Navigation', pageResults.keyboardNavigation.issues);
+    if (pageResults.images?.issues) addCat('Images', pageResults.images.issues);
+    if (pageResults.focusManagement?.issues) addCat('Focus Management', pageResults.focusManagement.issues);
+    if (pageResults.touchTargets?.issues) addCat('Touch Targets', pageResults.touchTargets.issues);
+    if (pageResults.focusOrder?.issues) addCat('Focus Order', pageResults.focusOrder.issues);
+    if (pageResults.visionSimulation?.issues) addCat('Vision Simulation', pageResults.visionSimulation.issues);
+    if (pageResults.manualReview?.issues) {
+      pageResults.manualReview.issues.forEach(issue => {
+        if (issue.ignored) return;
+        pushItem({
+          id: issue.id || '',
+          pageUrl,
+          category: 'Manual Review',
+          type: issue.type || 'unspecified',
+          severity: issue.severity || 'manual-review',
+          status: 'REVIEW',
+          selector: issue.context?.selector || '',
+          description: issue.message || '',
+          recommendation: issue.recommendation || ''
+        });
+      });
+    }
+
+    if (Array.isArray(pageResults.colorContrast)) {
+      pageResults.colorContrast.forEach(contrast => {
+        if (contrast.status === 'FAIL' && !contrast.ignored) {
+          pushItem({
+            id: contrast.id || '',
+            pageUrl,
+            category: 'Color Contrast',
+            type: 'Insufficient Contrast',
+            severity: 'critical',
+            status: 'FAIL',
+            selector: contrast.elementDetails?.selector || contrast.context?.selector || '',
+            description: `Contrast ratio: ${contrast.contrastRatio}:1 (required: ${contrast.compliance?.requiredRatio}:1)`,
+            recommendation: 'Improve color contrast to meet WCAG AA standards'
+          });
+        }
+      });
+    }
+
+    return items;
+  }
+
+  /**
    * Get recommendations
    * @param {Object} auditResults - Audit results
    * @returns {Array} Recommendations
@@ -899,62 +997,62 @@ export class ReportGenerator {
       // Count semantic HTML issues
       if (results.semanticHTML && results.semanticHTML.issues) {
         categories.semanticHTML.total++;
-        categories.semanticHTML.issues += results.semanticHTML.issues.length;
+        categories.semanticHTML.issues += results.semanticHTML.issues.filter(i => !i.ignored).length;
       }
 
       // Count color contrast issues
       if (results.colorContrast) {
         categories.colorContrast.total++;
-        const contrastIssues = results.colorContrast.filter(c => c.status === 'FAIL').length;
+        const contrastIssues = results.colorContrast.filter(c => c.status === 'FAIL' && !c.ignored).length;
         categories.colorContrast.issues += contrastIssues;
       }
 
       // Count ARIA issues
       if (results.ariaLabels && results.ariaLabels.issues) {
         categories.ariaLabels.total++;
-        categories.ariaLabels.issues += results.ariaLabels.issues.length;
+        categories.ariaLabels.issues += results.ariaLabels.issues.filter(i => !i.ignored).length;
       }
 
       // Count keyboard navigation issues
       if (results.keyboardNavigation && results.keyboardNavigation.issues) {
         categories.keyboardNavigation.total++;
-        categories.keyboardNavigation.issues += results.keyboardNavigation.issues.length;
+        categories.keyboardNavigation.issues += results.keyboardNavigation.issues.filter(i => !i.ignored).length;
       }
 
       // Count image issues
       if (results.images && results.images.issues) {
         categories.images.total++;
-        categories.images.issues += results.images.issues.length;
+        categories.images.issues += results.images.issues.filter(i => !i.ignored).length;
       }
 
       // Count focus management issues
       if (results.focusManagement && results.focusManagement.issues) {
         categories.focusManagement.total++;
-        categories.focusManagement.issues += results.focusManagement.issues.length;
+        categories.focusManagement.issues += results.focusManagement.issues.filter(i => !i.ignored).length;
       }
 
       // Count touch target issues
       if (results.touchTargets && results.touchTargets.issues) {
         categories.touchTargets.total++;
-        categories.touchTargets.issues += results.touchTargets.issues.length;
+        categories.touchTargets.issues += results.touchTargets.issues.filter(i => !i.ignored).length;
       }
 
       // Count focus order issues
       if (results.focusOrder && results.focusOrder.issues) {
         categories.focusOrder.total++;
-        categories.focusOrder.issues += results.focusOrder.issues.length;
+        categories.focusOrder.issues += results.focusOrder.issues.filter(i => !i.ignored).length;
       }
 
       // Count vision simulation issues
       if (results.visionSimulation && results.visionSimulation.issues) {
         categories.visionSimulation.total++;
-        categories.visionSimulation.issues += results.visionSimulation.issues.length;
+        categories.visionSimulation.issues += results.visionSimulation.issues.filter(i => !i.ignored).length;
       }
 
       // Count manual review issues
       if (results.manualReview && results.manualReview.issues) {
         categories.manualReview.total++;
-        categories.manualReview.issues += results.manualReview.issues.length;
+        categories.manualReview.issues += results.manualReview.issues.filter(i => !i.ignored).length;
       }
     });
 

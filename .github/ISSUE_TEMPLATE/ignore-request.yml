@@ -1,0 +1,68 @@
+name: Request to ignore a finding
+description: Ask maintainers to ignore a specific audit finding in future runs
+title: "Ignore: <short description>"
+labels: [ignore-request]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Provide the details below so maintainers can review and approve an ignore rule. Include as much context as possible.
+  - type: input
+    id: issue_id
+    attributes:
+      label: Issue ID
+      description: Copy the Issue ID from the CSV or summary for the finding you want to ignore
+      placeholder: e.g. 4f9a1b2c
+    validations:
+      required: true
+  - type: input
+    id: page_url
+    attributes:
+      label: Page URL
+      description: The page where the issue appears
+      placeholder: https://example.com/page
+    validations:
+      required: true
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      description: Choose the category that best matches the finding
+      options:
+        - Color Contrast
+        - ARIA Labels
+        - Keyboard Navigation
+        - Images
+        - Focus Management
+        - Touch Targets
+        - Focus Order
+        - Vision Simulation
+        - Semantic HTML
+        - Manual Review
+    validations:
+      required: false
+  - type: input
+    id: selector
+    attributes:
+      label: CSS Selector (optional)
+      description: The element selector shown for the finding
+      placeholder: div.hero h1.title
+  - type: textarea
+    id: reason
+    attributes:
+      label: Reason for ignoring
+      description: Explain why this finding should be ignored (e.g., false positive, acceptable risk, compensating control)
+      placeholder: Your rationale...
+    validations:
+      required: true
+  - type: input
+    id: expiry
+    attributes:
+      label: Expiry date (optional)
+      description: ISO date when this ignore should expire (YYYY-MM-DD)
+      placeholder: 2026-12-31
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional notes (optional)
+      description: Any extra details, screenshots, or links

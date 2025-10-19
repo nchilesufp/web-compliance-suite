@@ -273,6 +273,25 @@ Outputs:
 Local rebuild of the index at any time:
 - `npm run build:index`
 
+## ✅ Ignoring Findings (human-approved)
+
+Sometimes a finding is a false positive or an acceptable exception. You can request that the tool ignore it in future runs.
+
+End user flow:
+- Each row in the CSV now includes an "Issue ID" column; the Summary lists this ID too.
+- Open a new GitHub issue using "Request to ignore a finding" and paste the Issue ID, page URL, and your rationale.
+
+Maintainer flow:
+1) Review the request. If approved, add a rule to `config/ignore.json` using the helper script:
+  - By exact ID: `node scripts/merge-ignore.js --id <issueId>`
+  - Or a scoped rule: `node scripts/merge-ignore.js --domain example.com --selector "header .logo" --severityAtMost low --expiry 2026-12-31`
+2) Commit the change. Future audits will mark matching findings as ignored.
+
+Notes:
+- Ignored items are excluded from counts and grades.
+- You can also specify `--url`, `--category`, `--type`, `--textIncludes`, or `--severityAtMost` to fine-tune a rule.
+- Optional `--expiry YYYY-MM-DD` can auto-expire an ignore.
+
 ## 🤝 Contributing
 
 1. Fork the repository

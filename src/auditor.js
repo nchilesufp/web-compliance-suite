@@ -129,9 +129,135 @@ export class AccessibilityAuditor {
     await this.checkFocusManagement();
     await this.checkTouchTargets();
     await this.checkFocusOrder();
-    
+    // Assign stable IDs and apply ignore rules before summary
+    try { this.addStableIds(this.page.url); } catch {}
+    try { await this.applyIgnoreRules(); } catch {}
+
     this.calculateSummary();
     return this.results;
+  }
+
+  // Assign stable IDs for end-user ignore flow
+  addStableIds(currentUrl) {
+    const url = typeof currentUrl === 'function' ? currentUrl() : currentUrl || '';
+    const norm = (s) => (s || '').toString().replace(/\s+/g, ' ').trim().toLowerCase();
+    const hash = (str) => {
+      let h = 5381; // djb2
+      for (let i = 0; i < str.length; i++) h = ((h << 5) + h) + str.charCodeAt(i);
+      return ('00000000' + (h >>> 0).toString(16)).slice(-8);
+    };
+    const makeId = (cat, type, selector, text) =>
+      hash([norm(url), norm(cat), norm(type), norm(selector), norm(text)].join('|'));
+
+    const setId = (catName, list) => {
+      if (!list || !Array.isArray(list)) return;
+      for (const issue of list) {
+        const type = issue.type || 'unspecified';
+        const selector =
+          issue.context?.selector ||
+          issue.elementDetails?.selector ||
+          issue.element?.context?.selector ||
+          '';
+        const text =
+          issue.context?.textSample ||
+          issue.elementDetails?.textContent ||
+          issue.text ||
+          issue.message ||
+          '';
+        issue.id = makeId(catName, type, selector, text);
+        issue.url = url;
+      }
+    };
+
+    const categories = [
+      'semanticHTML','ariaLabels','keyboardNavigation','images',
+      'focusManagement','touchTargets','focusOrder','visionSimulation'
+    ];
+    categories.forEach((c) => {
+      const cat = this.results[c];
+      if (cat?.issues) setId(c, cat.issues);
+    });
+
+    if (this.results.manualReview?.issues) {
+      setId('manualReview', this.results.manualReview.issues);
+    }
+
+    if (Array.isArray(this.results.colorContrast)) {
+      for (const combo of this.results.colorContrast) {
+        const selector = combo.elementDetails?.selector || combo.context?.selector || '';
+        const text = combo.sampleText || combo.context?.textSample || '';
+        const type = combo.type || (combo.status === 'FAIL' ? 'contrast_failure' : 'contrast_entry');
+        combo.id = makeId('colorContrast', type, selector, text);
+        combo.url = url;
+      }
+    }
+  }
+
+  async applyIgnoreRules() {
+    try {
+      const { loadIgnoreConfig, shouldIgnore } = await import('./ignore.js');
+      const cfg = loadIgnoreConfig(this.options.ignoreFile || 'config/ignore.json');
+      const rules = (cfg && cfg.rules) || [];
+      const pageUrl = this.page.url?.() || this.page.url || '';
+
+      const normIssue = (category, issue, fallback = {}) => {
+        const selector =
+          issue.context?.selector ||
+          issue.elementDetails?.selector ||
+          issue.element?.context?.selector ||
+          fallback.selector || '';
+        const text =
+          issue.context?.textSample ||
+          issue.elementDetails?.textContent ||
+          issue.text ||
+          issue.message ||
+          '';
+        const severity = (issue.severity || 'medium').toLowerCase();
+        const type = issue.type || fallback.type || 'unspecified';
+        const id = issue.id || '';
+        return { id, url: pageUrl, category, type, severity, selector, text };
+      };
+
+      const cats = [
+        'semanticHTML','ariaLabels','keyboardNavigation','images',
+        'focusManagement','touchTargets','focusOrder','visionSimulation'
+      ];
+      for (const c of cats) {
+        const cat = this.results[c];
+        if (!cat || !Array.isArray(cat.issues)) continue;
+        for (const issue of cat.issues) {
+          const n = normIssue(c, issue);
+          if (shouldIgnore(n, rules)) issue.ignored = true;
+        }
+      }
+
+      if (this.results.manualReview?.issues?.length) {
+        for (const issue of this.results.manualReview.issues) {
+          const n = normIssue('manualReview', issue);
+          if (shouldIgnore(n, rules)) issue.ignored = true;
+        }
+      }
+
+      if (Array.isArray(this.results.colorContrast)) {
+        for (const combo of this.results.colorContrast) {
+          if (combo.status !== 'FAIL') continue;
+          const selector = combo.elementDetails?.selector || combo.context?.selector || '';
+          const text = combo.sampleText || '';
+          const n = {
+            id: combo.id || '',
+            url: pageUrl,
+            category: 'colorContrast',
+            type: 'contrast_failure',
+            severity: 'critical',
+            selector,
+            text
+          };
+          if (shouldIgnore(n, rules)) combo.ignored = true;
+        }
+      }
+    } catch (e) {
+      // non-fatal
+    }
   }
 
   /**
@@ -1688,7 +1814,7 @@ export class AccessibilityAuditor {
     let warnings = 0;
     let passes = 0;
 
-    // Count issues from each category
+  // Count issues from each category (skip ignored)
     const categories = [
       this.results.semanticHTML,
       this.results.ariaLabels,
@@ -1703,6 +1829,7 @@ export class AccessibilityAuditor {
     categories.forEach(category => {
       if (category.issues) {
         category.issues.forEach(issue => {
+          if (issue.ignored) return;
           totalIssues++;
           if (issue.severity === 'critical') {
             criticalIssues++;
@@ -1715,9 +1842,10 @@ export class AccessibilityAuditor {
       }
     });
 
-    // Count color contrast failures
+    // Count color contrast failures (skip ignored)
     this.results.colorContrast.forEach(contrast => {
       if (contrast.status === 'FAIL') {
+        if (contrast.ignored) return;
         totalIssues++;
         criticalIssues++;
       } else if (contrast.status === 'PASS') {

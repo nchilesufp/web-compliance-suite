@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "rules": [
+    // Example rules. Remove or edit as needed.
+    // {
+    //   "id": "9f3ab2c1",                 // Optional: direct match by Issue ID
+    //   "scope": "domain",                // global | domain | url
+    //   "pattern": "www.example.com",
+    //   "category": "colorContrast",      // e.g., colorContrast, images, ariaLabels, manualReview
+    //   "type": "contrast_failure",       // or "*" for any type in category
+    //   "selector": ".hero .badge-text",  // optional selector contains match
+    //   "textIncludes": "Shop Now",       // optional text contains match
+    //   "severityAtMost": "critical",     // only ignore up to this severity
+    //   "reason": "Design-approved",
+    //   "expires": "2026-01-01"
+    // }
+  ]
+}

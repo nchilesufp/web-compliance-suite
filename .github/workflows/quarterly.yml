@@ -1,0 +1,36 @@
+name: Quarterly Accessibility Audits
+on:
+  schedule:
+    - cron: '0 6 * * 1' # Mondays 06:00 UTC
+  workflow_dispatch: {}
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install deps
+        run: npm ci
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+      - name: Run quarterly scheduler
+        run: node scripts/schedule-run.js
+      - name: Commit reports and index
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "actions@users.noreply.github.com"
+          git add reports/** docs/** data/last-run.json || true
+          git commit -m "chore: quarterly reports and grades [skip ci]" || echo "nothing to commit"
+          git push || echo "nothing to push"
+      - name: Upload reports as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports-${{ github.run_id }}
+          path: |
+            reports/**
+            docs/index.html

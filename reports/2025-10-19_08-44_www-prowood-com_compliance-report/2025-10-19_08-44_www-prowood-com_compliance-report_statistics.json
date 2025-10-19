@@ -1,0 +1,206 @@
+{
+  "metadata": {
+    "domain": "www.prowood.com",
+    "timestamp": "2025-10-19T12:44:36.782Z",
+    "pagesAudited": 5,
+    "auditDuration": 52177
+  },
+  "overall": {
+    "totalIssues": 284,
+    "criticalIssues": 8,
+    "highPriorityIssues": 13,
+    "mediumPriorityIssues": 141,
+    "lowPriorityIssues": 122,
+    "passes": 131,
+    "complianceLevel": "Needs Improvement"
+  },
+  "byCategory": {
+    "semanticHTML": {
+      "total": 5,
+      "issues": 5
+    },
+    "colorContrast": {
+      "total": 5,
+      "issues": 8
+    },
+    "ariaLabels": {
+      "total": 5,
+      "issues": 57
+    },
+    "keyboardNavigation": {
+      "total": 5,
+      "issues": 0
+    },
+    "images": {
+      "total": 5,
+      "issues": 0
+    },
+    "focusManagement": {
+      "total": 5,
+      "issues": 0
+    },
+    "touchTargets": {
+      "total": 5,
+      "issues": 196
+    },
+    "focusOrder": {
+      "total": 5,
+      "issues": 5
+    },
+    "visionSimulation": {
+      "total": 5,
+      "issues": 0
+    },
+    "manualReview": {
+      "total": 5,
+      "issues": 13
+    }
+  },
+  "byPage": [
+    {
+      "url": "https://www.prowood.com/",
+      "title": "ProWood Pressure-Treated Lumber Products & More",
+      "summary": {
+        "totalIssues": 46,
+        "criticalIssues": 4,
+        "warnings": 20,
+        "passes": 49,
+        "complianceLevel": "Needs Improvement"
+      },
+      "issues": {
+        "total": 59,
+        "critical": 4,
+        "high": 13,
+        "medium": 20,
+        "low": 22,
+        "passes": 27
+      }
+    },
+    {
+      "url": "https://www.prowood.com/contact",
+      "title": "Contact ProWood Today",
+      "summary": {
+        "totalIssues": 88,
+        "criticalIssues": 0,
+        "warnings": 54,
+        "passes": 55,
+        "complianceLevel": "WCAG AA Compliant"
+      },
+      "issues": {
+        "total": 88,
+        "critical": 0,
+        "high": 0,
+        "medium": 54,
+        "low": 34,
+        "passes": 21
+      }
+    },
+    {
+      "url": "https://www.prowood.com/dealers",
+      "title": "Discover How ProWood Supports Our Dealers",
+      "summary": {
+        "totalIssues": 40,
+        "criticalIssues": 0,
+        "warnings": 18,
+        "passes": 46,
+        "complianceLevel": "WCAG AA Compliant"
+      },
+      "issues": {
+        "total": 40,
+        "critical": 0,
+        "high": 0,
+        "medium": 18,
+        "low": 22,
+        "passes": 24
+      }
+    },
+    {
+      "url": "https://www.prowood.com/products",
+      "title": "ProWood Products for your Project",
+      "summary": {
+        "totalIssues": 46,
+        "criticalIssues": 4,
+        "warnings": 20,
+        "passes": 53,
+        "complianceLevel": "Needs Improvement"
+      },
+      "issues": {
+        "total": 46,
+        "critical": 4,
+        "high": 0,
+        "medium": 20,
+        "low": 22,
+        "passes": 31
+      }
+    },
+    {
+      "url": "https://www.prowood.com/treatment-method/fr",
+      "title": "ProWood Fire-Retardant Lumber Lumber",
+      "summary": {
+        "totalIssues": 51,
+        "criticalIssues": 0,
+        "warnings": 29,
+        "passes": 50,
+        "complianceLevel": "WCAG AA Compliant"
+      },
+      "issues": {
+        "total": 51,
+        "critical": 0,
+        "high": 0,
+        "medium": 29,
+        "low": 22,
+        "passes": 28
+      }
+    }
+  ],
+  "trends": {
+    "mostCommonIssues": [
+      {
+        "type": "missing_accessible_name",
+        "count": 57
+      },
+      {
+        "type": "heading_skip_recommendation",
+        "count": 5
+      }
+    ],
+    "pagesWithMostIssues": [
+      {
+        "url": "https://www.prowood.com/contact",
+        "title": "Contact ProWood Today",
+        "issueCount": 88
+      },
+      {
+        "url": "https://www.prowood.com/",
+        "title": "ProWood Pressure-Treated Lumber Products & More",
+        "issueCount": 59
+      },
+      {
+        "url": "https://www.prowood.com/treatment-method/fr",
+        "title": "ProWood Fire-Retardant Lumber Lumber",
+        "issueCount": 51
+      },
+      {
+        "url": "https://www.prowood.com/products",
+        "title": "ProWood Products for your Project",
+        "issueCount": 46
+      },
+      {
+        "url": "https://www.prowood.com/dealers",
+        "title": "Discover How ProWood Supports Our Dealers",
+        "issueCount": 40
+      }
+    ],
+    "categoryDistribution": {
+      "semanticHTML": 5,
+      "ariaLabels": 57,
+      "keyboardNavigation": 0,
+      "images": 0,
+      "focusManagement": 0,
+      "touchTargets": 196,
+      "focusOrder": 5,
+      "visionSimulation": 0,
+      "manualReview": 13
+    }
+  }
+}

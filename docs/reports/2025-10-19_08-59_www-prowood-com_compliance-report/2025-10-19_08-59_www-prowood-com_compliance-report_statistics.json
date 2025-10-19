@@ -1,0 +1,158 @@
+{
+  "metadata": {
+    "domain": "www.prowood.com",
+    "timestamp": "2025-10-19T12:59:48.953Z",
+    "pagesAudited": 3,
+    "auditDuration": 55475
+  },
+  "overall": {
+    "totalIssues": 180,
+    "criticalIssues": 0,
+    "highPriorityIssues": 10,
+    "mediumPriorityIssues": 92,
+    "lowPriorityIssues": 78,
+    "passes": 52,
+    "complianceLevel": "WCAG AA Compliant"
+  },
+  "byCategory": {
+    "semanticHTML": {
+      "total": 3,
+      "issues": 3
+    },
+    "colorContrast": {
+      "total": 3,
+      "issues": 0
+    },
+    "ariaLabels": {
+      "total": 3,
+      "issues": 36
+    },
+    "keyboardNavigation": {
+      "total": 3,
+      "issues": 0
+    },
+    "images": {
+      "total": 3,
+      "issues": 0
+    },
+    "focusManagement": {
+      "total": 3,
+      "issues": 0
+    },
+    "touchTargets": {
+      "total": 3,
+      "issues": 128
+    },
+    "focusOrder": {
+      "total": 3,
+      "issues": 3
+    },
+    "visionSimulation": {
+      "total": 3,
+      "issues": 0
+    },
+    "manualReview": {
+      "total": 3,
+      "issues": 10
+    }
+  },
+  "byPage": [
+    {
+      "url": "https://www.prowood.com/",
+      "title": "ProWood Pressure-Treated Lumber Products & More",
+      "summary": {
+        "totalIssues": 42,
+        "criticalIssues": 0,
+        "warnings": 20,
+        "passes": 38,
+        "complianceLevel": "WCAG AA Compliant"
+      },
+      "issues": {
+        "total": 52,
+        "critical": 0,
+        "high": 10,
+        "medium": 20,
+        "low": 22,
+        "passes": 16
+      }
+    },
+    {
+      "url": "https://www.prowood.com/contact",
+      "title": "Contact ProWood Today",
+      "summary": {
+        "totalIssues": 88,
+        "criticalIssues": 0,
+        "warnings": 54,
+        "passes": 51,
+        "complianceLevel": "WCAG AA Compliant"
+      },
+      "issues": {
+        "total": 88,
+        "critical": 0,
+        "high": 0,
+        "medium": 54,
+        "low": 34,
+        "passes": 17
+      }
+    },
+    {
+      "url": "https://www.prowood.com/dealers",
+      "title": "Discover How ProWood Supports Our Dealers",
+      "summary": {
+        "totalIssues": 40,
+        "criticalIssues": 0,
+        "warnings": 18,
+        "passes": 41,
+        "complianceLevel": "WCAG AA Compliant"
+      },
+      "issues": {
+        "total": 40,
+        "critical": 0,
+        "high": 0,
+        "medium": 18,
+        "low": 22,
+        "passes": 19
+      }
+    }
+  ],
+  "trends": {
+    "mostCommonIssues": [
+      {
+        "type": "missing_accessible_name",
+        "count": 36
+      },
+      {
+        "type": "heading_skip_recommendation",
+        "count": 3
+      }
+    ],
+    "pagesWithMostIssues": [
+      {
+        "url": "https://www.prowood.com/contact",
+        "title": "Contact ProWood Today",
+        "issueCount": 88
+      },
+      {
+        "url": "https://www.prowood.com/",
+        "title": "ProWood Pressure-Treated Lumber Products & More",
+        "issueCount": 52
+      },
+      {
+        "url": "https://www.prowood.com/dealers",
+        "title": "Discover How ProWood Supports Our Dealers",
+        "issueCount": 40
+      }
+    ],
+    "categoryDistribution": {
+      "semanticHTML": 3,
+      "ariaLabels": 36,
+      "keyboardNavigation": 0,
+      "images": 0,
+      "focusManagement": 0,
+      "touchTargets": 128,
+      "focusOrder": 3,
+      "visionSimulation": 0,
+      "manualReview": 10
+    }
+  }
+}

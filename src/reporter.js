@@ -108,13 +108,49 @@ export class ReportGenerator {
     markdown += `- **Medium Priority Issues:** ${overallStats.mediumPriorityIssues}\n`;
     markdown += `- **Low Priority Issues:** ${overallStats.lowPriorityIssues}\n\n`;
 
-    // Critical Issues
+  // Critical Issues
     if (overallStats.criticalIssues > 0) {
       markdown += `## Critical Issues (Must Fix)\n\n`;
       const criticalIssues = this.getIssuesBySeverity(auditResults, 'critical');
       criticalIssues.forEach((issue, index) => {
         markdown += `${index + 1}. **${issue.type}** - ${issue.message}\n`;
-        markdown += `   - Recommendation: ${issue.recommendation}\n\n`;
+        
+        // Add specific location information if available
+        if (issue.context?.selector) {
+          markdown += `   - **Location**: \`${issue.context.selector}\`\n`;
+        }
+        if (issue.context?.textSample) {
+          markdown += `   - **Text**: "${issue.context.textSample}"\n`;
+        }
+        if (issue.context?.computedColors) {
+          markdown += `   - **Colors**: ${issue.context.computedColors.foreground} on ${issue.context.computedColors.background}\n`;
+        }
+        if (issue.context?.filename) {
+          markdown += `   - **Image**: ${issue.context.filename}\n`;
+        }
+        if (issue.context?.elementType) {
+          markdown += `   - **Element**: ${issue.context.elementType}\n`;
+        }
+        
+        markdown += `   - **Recommendation**: ${issue.recommendation}\n`;
+        markdown += `   - **Page**: ${issue.pageUrl}\n\n`;
+      });
+    }
+
+    // Manual Review (High Priority)
+    const manualReviews = [];
+    auditResults.pages.forEach(page => {
+      const issues = page.results?.manualReview?.issues || [];
+      issues.forEach(i => manualReviews.push({ ...i, pageUrl: page.url }));
+    });
+    if (manualReviews.length) {
+      markdown += `## Manual Review Recommended\n\n`;
+      manualReviews.forEach((issue, index) => {
+        markdown += `${index + 1}. **${issue.type}** - ${issue.message}\n`;
+        if (issue.context?.selector) markdown += `   - **Location**: \`${issue.context.selector}\`\n`;
+        if (issue.context?.textSample) markdown += `   - **Text**: "${issue.context.textSample}"\n`;
+        markdown += `   - **Recommendation**: ${issue.recommendation}\n`;
+        markdown += `   - **Page**: ${issue.pageUrl}\n\n`;
       });
     }
 
@@ -124,7 +160,20 @@ export class ReportGenerator {
       const highPriorityIssues = this.getIssuesBySeverity(auditResults, 'high');
       highPriorityIssues.forEach((issue, index) => {
         markdown += `${index + 1}. **${issue.type}** - ${issue.message}\n`;
-        markdown += `   - Recommendation: ${issue.recommendation}\n\n`;
+        
+        // Add specific location information if available
+        if (issue.context?.selector) {
+          markdown += `   - **Location**: \`${issue.context.selector}\`\n`;
+        }
+        if (issue.context?.textSample || issue.context?.textContent) {
+          markdown += `   - **Text**: "${issue.context.textSample || issue.context.textContent}"\n`;
+        }
+        if (issue.context?.elementType) {
+          markdown += `   - **Element**: ${issue.context.elementType}\n`;
+        }
+        
+        markdown += `   - **Recommendation**: ${issue.recommendation}\n`;
+        markdown += `   - **Page**: ${issue.pageUrl}\n\n`;
       });
     }
 
@@ -141,6 +190,17 @@ export class ReportGenerator {
     recommendations.forEach((rec, index) => {
       markdown += `${index + 1}. ${rec}\n`;
     });
+
+    // Advanced Accessibility Features
+    markdown += `\n## Advanced Accessibility Checks\n\n`;
+    markdown += `This audit includes advanced accessibility testing:\n\n`;
+    markdown += `- **Touch Targets**: Validates interactive element sizes meet WCAG 2.5.5 (44x44px AAA, 24x24px AA minimum)\n`;
+    markdown += `- **Focus Order**: Tests keyboard navigation sequence and detects illogical tab orders\n`;
+    markdown += `- **Vision Simulation**: Tests color combinations for 8 types of color vision deficiencies:\n`;
+    markdown += `  - Protanopia (Red-blind)\n`;
+    markdown += `  - Deuteranopia (Green-blind, most common)\n`;
+    markdown += `  - Tritanopia (Blue-blind)\n`;
+    markdown += `  - Plus Protanomaly, Deuteranomaly, Tritanomaly, Achromatopsia, and Achromatomaly\n`;
 
     markdown += `\n## Detailed Results\n\n`;
     markdown += `For detailed findings and specific remediation steps, see the CSV report.\n\n`;
@@ -161,7 +221,107 @@ export class ReportGenerator {
   async generateDetailedReport(auditResults, filename, targetDir = this.outputDir) {
     const filePath = path.join(targetDir, filename);
     
-    let csv = 'Page URL,Category,Issue Type,Severity,Element,Description,Recommendation,Status,Evidence\n';
+    // Updated column order: move Status after Severity
+    const header = ['Page URL','Category','Issue Type','Severity','Status','Element Selector','Element Context','Description','Recommendation','Technical Details'];
+    const rows = [];
+
+    // CSV escaping helper: always quote, double internal quotes, and strip newlines
+    const esc = (val) => {
+      const s = String(val ?? '').replace(/"/g, '""').replace(/\r?\n|\r/g, ' ');
+      return `"${s}"`;
+    };
+
+    // Normalize for deduping (remove zero-width chars, collapse whitespace)
+    const normalizeCtx = (s) => String(s ?? '').replace(/[\u200B-\u200D\uFEFF]/g, '').replace(/\s+/g, ' ').trim();
+    const buildKey = (row) => {
+      // row order: [url, category, issueType, severity, status, selector, context, description, recommendation, technical]
+      return [
+        row[0], row[1], row[2], row[3], row[4], row[5], normalizeCtx(row[6]), row[7], row[8]
+      ].join('||');
+    };
+
+    // WCAG mapping and concise context helpers
+    const wcagCategory = (rawCategory, issueType) => {
+      switch (rawCategory) {
+        case 'Color Contrast': return '1.4.3 Contrast (Minimum)';
+        case 'Images': return '1.1.1 Non-text Content';
+        case 'ARIA Labels': return '4.1.2 Name, Role, Value';
+        case 'Keyboard Navigation': return '2.1.1 Keyboard';
+        case 'Focus Order': return '2.4.3 Focus Order';
+        case 'Focus Management': return '2.4.7 Focus Visible';
+        case 'Touch Targets': return '2.5.8 Target Size (Minimum)';
+        case 'Vision Simulation': return 'Advisory';
+        case 'Semantic HTML': return 'Advisory';
+        case 'Manual Review': return 'Manual Review';
+        default: return rawCategory || 'Other';
+      }
+    };
+
+    const issueLabel = (rawCategory, issueType) => {
+      switch (rawCategory) {
+        case 'Color Contrast': return 'Insufficient Contrast';
+        case 'ARIA Labels': return issueType === 'missing_accessible_name' ? 'Missing Accessible Name' : 'Name/Role/Value Issue';
+        case 'Images': return issueType === 'missing_alt' ? 'Missing Alt Text' : 'Non-text Content Issue';
+        case 'Keyboard Navigation': return 'Keyboard Accessibility Issue';
+        case 'Focus Order': return 'Illogical Focus Order';
+        case 'Focus Management': return 'No Visible Focus';
+        case 'Touch Targets': return issueType === 'touch_target_too_small' ? 'Target Too Small' : 'Target Size Advisory';
+        case 'Vision Simulation': return 'Potential CVD Issue';
+        case 'Semantic HTML': return 'Structure Recommendation';
+        case 'Manual Review': return 'Ensure Sufficient Image Overlay';
+        default: return issueType || 'Issue';
+      }
+    };
+
+    const severityOut = (rawCategory, rawSeverity) => rawCategory === 'Manual Review' ? 'manual-review' : (rawSeverity || 'low');
+
+    const ctxText = {
+      semantic(issue) {
+        const h = issue.element?.context;
+        if (h?.levelName) return `Heading: ${h.levelName} "${(issue.element?.text || '').substring(0,80)}"`;
+        return (issue.message || '').substring(0, 120);
+      },
+      contrast(contrast) {
+        const t = contrast.sampleText || contrast.context?.textSample || '';
+        return `Text: "${t}" | Colors: ${contrast.textColor} on ${contrast.backgroundColor} | Font: ${contrast.fontSize || ''} ${contrast.fontWeight || ''}`;
+      },
+      aria(issue) {
+        const t = issue.context?.elementType || issue.element || '';
+        const label = issue.context?.associatedLabel || 'None';
+        const txt = (issue.context?.surroundingContext?.parentText || '').substring(0,80);
+        return `Type: ${t} | Label: ${label} | Text: "${txt}"`;
+      },
+      keyboard(issue) {
+        const t = issue.context?.elementType || 'element';
+        const txt = (issue.context?.textContent || '').substring(0,80);
+        return `Type: ${t} | Text: "${txt}"`;
+      },
+      images(issue) {
+        const near = issue.context?.surroundingContent?.heading || issue.context?.surroundingContent?.figcaption || '';
+        return `File: ${issue.context?.filename || ''} | Near: "${(near || '').substring(0,80)}"`;
+      },
+      focusMgmt(issue) {
+        const t = issue.context?.elementType || '';
+        const txt = (issue.context?.textContent || '').substring(0,60);
+        return `Type: ${t} | Text: "${txt}"`;
+      },
+      touch(issue) {
+        return `Size: ${issue.context?.currentSize || 'unknown'} | Required: ${issue.context?.minimumSizeAA || '24x24px'} | Text: "${issue.context?.textContent || ''}"`;
+      },
+      focusOrder(issue) {
+        const jumps = issue.context?.jumps?.length || 0;
+        const first = issue.context?.jumps?.[0];
+        const snippet = first ? `${first.from?.text || ''} → ${first.to?.text || ''}` : '';
+        return `Jumps: ${jumps}${snippet ? ` | First: ${snippet.substring(0,60)}` : ''}`;
+      },
+      vision(issue) {
+        const v = issue.problematicVisionTypes?.map(x => x.name).join(', ') || '';
+        return `Colors: ${issue.colorPair?.color1 || ''} / ${issue.colorPair?.color2 || ''} | Problematic for: ${v} | Text: "${issue.context?.textSample || ''}"`;
+      },
+      manual(issue) {
+        return `Text: "${issue.context?.textSample || ''}" | Background image on: ${issue.context?.backgroundImageOn || ''}`;
+      }
+    };
 
     auditResults.pages.forEach(pageResult => {
       const pageUrl = pageResult.url;
@@ -170,49 +330,293 @@ export class ReportGenerator {
       // Semantic HTML issues
       if (results.semanticHTML && results.semanticHTML.issues) {
         results.semanticHTML.issues.forEach(issue => {
-          csv += `"${pageUrl}",Semantic HTML,${issue.type},${issue.severity},HTML Structure,"${issue.message}","${issue.recommendation}",FAIL,""\n`;
+          const rawCategory = 'Semantic HTML';
+          const category = wcagCategory(rawCategory, issue.type);
+          const issueType = issueLabel(rawCategory, issue.type);
+          const selector = issue.element?.selector || issue.elementDetails?.selector || 'N/A';
+          const contextInfo = ctxText.semantic(issue);
+          const status = 'FAIL';
+          const sev = severityOut(rawCategory, issue.severity);
+          const row = [
+            pageUrl,
+            category,
+            issueType,
+            sev,
+            status,
+            selector,
+            contextInfo,
+            issue.message || '',
+            issue.recommendation || '',
+            'HTML Structure'
+          ];
+          rows.push(row);
         });
       }
 
-      // Color contrast issues
+  // Color contrast issues
       if (results.colorContrast) {
         results.colorContrast.forEach(contrast => {
           if (contrast.status === 'FAIL') {
-            csv += `"${pageUrl}",Color Contrast,Insufficient Contrast,${contrast.compliance.passes ? 'PASS' : 'FAIL'},Text Elements,"Contrast ratio: ${contrast.contrastRatio}:1 (required: ${contrast.compliance.requiredRatio}:1)","Improve color contrast to meet WCAG AA standards",FAIL,"Text: ${contrast.textColor}, Background: ${contrast.backgroundColor}"\n`;
+            const rawCategory = 'Color Contrast';
+            const category = wcagCategory(rawCategory, 'Insufficient Contrast');
+            const issueType = issueLabel(rawCategory, 'Insufficient Contrast');
+            const selector = contrast.elementDetails?.selector 
+              || contrast.context?.selector 
+              || (contrast.element ? String(contrast.element) : '')
+              || 'text element';
+            const contextInfo = ctxText.contrast(contrast);
+            const technicalDetails = `Contrast: ${contrast.contrastRatio}:1 (required: ${contrast.compliance?.requiredRatio}:1)`;
+            const status = 'FAIL';
+            const sev = severityOut(rawCategory, 'critical');
+            const row = [
+              pageUrl,
+              category,
+              issueType,
+              sev,
+              status,
+              selector,
+              contextInfo,
+              `Contrast ratio: ${contrast.contrastRatio}:1 (required: ${contrast.compliance?.requiredRatio}:1)`,
+              'Improve color contrast to meet WCAG AA standards',
+              technicalDetails
+            ];
+            rows.push(row);
           }
+        });
+      }
+
+      // Manual review issues
+      if (results.manualReview && results.manualReview.issues && results.manualReview.issues.length) {
+        results.manualReview.issues.forEach(issue => {
+          const rawCategory = 'Manual Review';
+          const category = wcagCategory(rawCategory, issue.type);
+          const issueType = issueLabel(rawCategory, issue.type);
+          const selector = issue.context?.selector || 'text element';
+          const contextInfo = ctxText.manual(issue);
+          const status = 'REVIEW';
+          const sev = severityOut(rawCategory, issue.severity);
+          const row = [
+            pageUrl,
+            category,
+            issueType,
+            sev,
+            status,
+            selector,
+            contextInfo,
+            issue.message || '',
+            issue.recommendation || '',
+            'Manual review required'
+          ];
+          rows.push(row);
         });
       }
 
       // ARIA issues
       if (results.ariaLabels && results.ariaLabels.issues) {
         results.ariaLabels.issues.forEach(issue => {
-          csv += `"${pageUrl}",ARIA Labels,${issue.type},${issue.severity},${issue.element},"${issue.message}","${issue.recommendation}",FAIL,""\n`;
+          const rawCategory = 'ARIA Labels';
+          const category = wcagCategory(rawCategory, issue.type);
+          const issueType = issueLabel(rawCategory, issue.type);
+          const selector = issue.elementDetails?.selector || issue.element || 'interactive element';
+          const contextInfo = ctxText.aria(issue);
+          const status = 'FAIL';
+          const sev = severityOut(rawCategory, issue.severity);
+          const row = [
+            pageUrl,
+            category,
+            issueType,
+            sev,
+            status,
+            selector,
+            contextInfo,
+            issue.message || '',
+            issue.recommendation || '',
+            'Interactive Element'
+          ];
+          rows.push(row);
         });
       }
 
       // Keyboard navigation issues
       if (results.keyboardNavigation && results.keyboardNavigation.issues) {
         results.keyboardNavigation.issues.forEach(issue => {
-          csv += `"${pageUrl}",Keyboard Navigation,${issue.type},${issue.severity},Interactive Elements,"${issue.message}","${issue.recommendation}",FAIL,""\n`;
+          const rawCategory = 'Keyboard Navigation';
+          const category = wcagCategory(rawCategory, issue.type);
+          const issueType = issueLabel(rawCategory, issue.type);
+          const selector = issue.elementDetails?.selector || 'navigation element';
+          const contextInfo = ctxText.keyboard(issue);
+          const status = 'FAIL';
+          const sev = severityOut(rawCategory, issue.severity);
+          const row = [
+            pageUrl,
+            category,
+            issueType,
+            sev,
+            status,
+            selector,
+            contextInfo,
+            issue.message || '',
+            issue.recommendation || '',
+            'Navigation'
+          ];
+          rows.push(row);
         });
       }
 
       // Image issues
       if (results.images && results.images.issues) {
         results.images.issues.forEach(issue => {
-          csv += `"${pageUrl}",Images,${issue.type},${issue.severity},Images,"${issue.message}","${issue.recommendation}",FAIL,"Image: ${issue.src || 'N/A'}"\n`;
+          const rawCategory = 'Images';
+          const category = wcagCategory(rawCategory, issue.type);
+          const issueType = issueLabel(rawCategory, issue.type);
+          const selector = issue.element?.selector || issue.context?.selector || `img[src*="${issue.src}"]`;
+          const contextInfo = ctxText.images(issue);
+          const status = 'FAIL';
+          const sev = severityOut(rawCategory, issue.severity);
+          const row = [
+            pageUrl,
+            category,
+            issueType,
+            sev,
+            status,
+            selector,
+            contextInfo,
+            issue.message || '',
+            issue.recommendation || '',
+            `Image: ${issue.src || 'N/A'}`
+          ];
+          rows.push(row);
         });
       }
 
       // Focus management issues
       if (results.focusManagement && results.focusManagement.issues) {
         results.focusManagement.issues.forEach(issue => {
-          csv += `"${pageUrl}",Focus Management,${issue.type},${issue.severity},Interactive Elements,"${issue.message}","${issue.recommendation}",FAIL,""\n`;
+          const rawCategory = 'Focus Management';
+          const category = wcagCategory(rawCategory, issue.type);
+          const issueType = issueLabel(rawCategory, issue.type);
+          const selector = issue.elementDetails?.selector || 'focusable element';
+          const contextInfo = ctxText.focusMgmt(issue);
+          const technicalDetails = issue.context?.cssFixSuggestions?.[0] || 'Add focus styles';
+          const status = 'FAIL';
+          const sev = severityOut(rawCategory, issue.severity);
+          const row = [
+            pageUrl,
+            category,
+            issueType,
+            sev,
+            status,
+            selector,
+            contextInfo,
+            issue.message || '',
+            issue.recommendation || '',
+            technicalDetails
+          ];
+          rows.push(row);
+        });
+      }
+
+      // Touch target issues
+      if (results.touchTargets && results.touchTargets.issues) {
+        results.touchTargets.issues.forEach(issue => {
+          const rawCategory = 'Touch Targets';
+          const category = wcagCategory(rawCategory, issue.type);
+          const issueType = issueLabel(rawCategory, issue.type);
+          const selector = issue.context?.selector || 'interactive element';
+          const contextInfo = ctxText.touch(issue);
+          const technicalDetails = issue.context?.cssFixSuggestion || 'Increase touch target size';
+          const status = 'FAIL';
+          const sev = severityOut(rawCategory, issue.severity);
+          const row = [
+            pageUrl,
+            category,
+            issueType,
+            sev,
+            status,
+            selector,
+            contextInfo,
+            issue.message || '',
+            issue.recommendation || '',
+            technicalDetails
+          ];
+          rows.push(row);
+        });
+      }
+
+      // Focus order issues
+      if (results.focusOrder && results.focusOrder.issues) {
+        results.focusOrder.issues.forEach(issue => {
+          const rawCategory = 'Focus Order';
+          const category = wcagCategory(rawCategory, issue.type);
+          const issueType = issueLabel(rawCategory, issue.type);
+          const selector = issue.context?.selector || 'focus sequence';
+          const contextInfo = ctxText.focusOrder(issue);
+          const status = 'FAIL';
+          const sev = severityOut(rawCategory, issue.severity);
+          const row = [
+            pageUrl,
+            category,
+            issueType,
+            sev,
+            status,
+            selector,
+            contextInfo,
+            issue.message || '',
+            issue.recommendation || '',
+            'Tab sequence'
+          ];
+          rows.push(row);
+        });
+      }
+
+      // Vision simulation issues
+      if (results.visionSimulation && results.visionSimulation.issues) {
+        results.visionSimulation.issues.forEach(issue => {
+          const rawCategory = 'Vision Simulation';
+          const category = wcagCategory(rawCategory, issue.type);
+          const issueType = issueLabel(rawCategory, issue.type);
+          const selector = issue.context?.selector || 'color combination';
+          const contextInfo = ctxText.vision(issue);
+          const technicalDetails = `Color vision deficiency (${issue.problematicVisionTypes?.length || 0} type(s) affected)`;
+          const status = 'FAIL';
+          const sev = severityOut(rawCategory, issue.severity);
+          const row = [
+            pageUrl,
+            category,
+            issueType,
+            sev,
+            status,
+            selector,
+            contextInfo,
+            issue.message || '',
+            issue.recommendation || '',
+            technicalDetails
+          ];
+          rows.push(row);
         });
       }
     });
 
-    await fs.writeFile(filePath, csv);
+    // Deduplicate rows across all categories
+    const map = new Map(); // key -> { row, count }
+    for (const row of rows) {
+      const key = buildKey(row);
+      if (!map.has(key)) map.set(key, { row: [...row], count: 1 });
+      else map.get(key).count += 1;
+    }
+
+    // Build final CSV content
+    const lines = [];
+    lines.push(header.map(esc).join(','));
+    for (const { row, count } of map.values()) {
+      // Append Occurrences info to Technical Details
+      let tech = row[9] || '';
+      if (count > 1) tech = tech ? `${tech} | Occurrences: ${count}` : `Occurrences: ${count}`;
+      const out = [row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], tech];
+      lines.push(out.map(esc).join(','));
+    }
+
+    await fs.writeFile(filePath, lines.join('\n'));
     return filePath;
   }
 
@@ -303,7 +707,11 @@ export class ReportGenerator {
       pageResults.ariaLabels,
       pageResults.keyboardNavigation,
       pageResults.images,
-      pageResults.focusManagement
+      pageResults.focusManagement,
+      pageResults.touchTargets,
+      pageResults.focusOrder,
+      pageResults.visionSimulation,
+      pageResults.manualReview
     ];
 
     categories.forEach(category => {
@@ -478,7 +886,11 @@ export class ReportGenerator {
       ariaLabels: { total: 0, issues: 0 },
       keyboardNavigation: { total: 0, issues: 0 },
       images: { total: 0, issues: 0 },
-      focusManagement: { total: 0, issues: 0 }
+      focusManagement: { total: 0, issues: 0 },
+      touchTargets: { total: 0, issues: 0 },
+      focusOrder: { total: 0, issues: 0 },
+      visionSimulation: { total: 0, issues: 0 },
+      manualReview: { total: 0, issues: 0 }
     };
 
     auditResults.pages.forEach(page => {
@@ -519,6 +931,30 @@ export class ReportGenerator {
       if (results.focusManagement && results.focusManagement.issues) {
         categories.focusManagement.total++;
         categories.focusManagement.issues += results.focusManagement.issues.length;
+      }
+
+      // Count touch target issues
+      if (results.touchTargets && results.touchTargets.issues) {
+        categories.touchTargets.total++;
+        categories.touchTargets.issues += results.touchTargets.issues.length;
+      }
+
+      // Count focus order issues
+      if (results.focusOrder && results.focusOrder.issues) {
+        categories.focusOrder.total++;
+        categories.focusOrder.issues += results.focusOrder.issues.length;
+      }
+
+      // Count vision simulation issues
+      if (results.visionSimulation && results.visionSimulation.issues) {
+        categories.visionSimulation.total++;
+        categories.visionSimulation.issues += results.visionSimulation.issues.length;
+      }
+
+      // Count manual review issues
+      if (results.manualReview && results.manualReview.issues) {
+        categories.manualReview.total++;
+        categories.manualReview.issues += results.manualReview.issues.length;
       }
     });
 
@@ -601,7 +1037,7 @@ export class ReportGenerator {
       const issueCount = this.countIssuesBySeverity(results).total;
       
       if (issueCount > 0) {
-        const categories = ['semanticHTML', 'ariaLabels', 'keyboardNavigation', 'images', 'focusManagement'];
+        const categories = ['semanticHTML', 'ariaLabels', 'keyboardNavigation', 'images', 'focusManagement', 'touchTargets', 'focusOrder', 'visionSimulation', 'manualReview'];
         categories.forEach(category => {
           if (results[category] && results[category].issues) {
             distribution[category] = (distribution[category] || 0) + results[category].issues.length;

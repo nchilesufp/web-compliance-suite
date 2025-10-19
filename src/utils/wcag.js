@@ -100,26 +100,49 @@ export function getRequiredContrastRatio(isLargeText, level = WCAG_LEVELS.AA) {
 }
 
 /**
- * Validate heading hierarchy
+ * Validate heading hierarchy according to WCAG guidelines
  * @param {Array} headings - Array of heading elements with level property
  * @returns {Object} Validation result
  */
 export function validateHeadingHierarchy(headings) {
   const issues = [];
   let previousLevel = 0;
+  let hasH1 = false;
   
-  for (const heading of headings) {
+  for (let i = 0; i < headings.length; i++) {
+    const heading = headings[i];
     const currentLevel = parseInt(heading.level.replace('h', ''));
     
-    if (currentLevel > previousLevel + 1) {
+    // Check for H1 presence
+    if (currentLevel === 1) {
+      hasH1 = true;
+    }
+    
+    // WCAG allows skipping levels when moving up the hierarchy (from higher to lower numbers)
+    // e.g., H4 -> H2 is allowed, but H2 -> H4 should ideally go through H3
+    // However, skipping levels is not a WCAG violation, just a best practice
+    if (i > 0 && currentLevel > previousLevel + 1) {
+      // This is a recommendation, not a critical error
       issues.push({
-        type: 'heading_skip',
-        message: `Heading ${heading.level} follows ${heading.level.replace(/\d/, previousLevel)} without intermediate levels`,
-        element: heading
+        type: 'heading_skip_recommendation', 
+        severity: 'low',
+        message: `Consider adding intermediate heading levels between H${previousLevel} and H${currentLevel} for better document structure`,
+        element: heading,
+        recommendation: 'While not required by WCAG, a logical heading sequence improves navigation for screen reader users'
       });
     }
     
     previousLevel = currentLevel;
+  }
+  
+  // Missing H1 is more critical than heading skips
+  if (!hasH1 && headings.length > 0) {
+    issues.push({
+      type: 'missing_h1',
+      severity: 'medium',
+      message: 'Page should have exactly one H1 heading as the main page title',
+      recommendation: 'Add an H1 heading that describes the main content or purpose of the page'
+    });
   }
   
   return {
@@ -154,12 +177,13 @@ export function checkAccessibleName(element) {
 }
 
 /**
- * Validate ARIA attributes
+ * Validate ARIA attributes with context awareness
  * @param {Element} element - DOM element
  * @returns {Object} ARIA validation result
  */
 export function validateARIA(element) {
   const issues = [];
+  const warnings = [];
   const ariaAttrs = {};
   
   // Collect all ARIA attributes
@@ -169,22 +193,72 @@ export function validateARIA(element) {
     }
   });
   
-  // Check for common ARIA issues
+  // Check for common ARIA issues with better context awareness
   if (ariaAttrs['aria-expanded'] && !ariaAttrs['aria-controls']) {
-    issues.push('Element with aria-expanded should have aria-controls');
+    // This is a recommendation, not always required
+    warnings.push('Element with aria-expanded should ideally have aria-controls for better user experience');
   }
   
-  if (ariaAttrs['aria-describedby'] && !document.getElementById(ariaAttrs['aria-describedby'])) {
-    issues.push('aria-describedby references non-existent element');
+  // More lenient checking for referenced elements
+  if (ariaAttrs['aria-describedby']) {
+    const referencedIds = ariaAttrs['aria-describedby'].split(/\s+/);
+    const missingIds = referencedIds.filter(id => {
+      const referencedElement = document.getElementById(id);
+      // Also check if element might be in shadow DOM or loaded dynamically
+      return !referencedElement && !id.includes('-dynamic-') && !id.includes('-shadow-');
+    });
+    
+    if (missingIds.length > 0) {
+      // Only flag as error if clearly not dynamic content
+      if (missingIds.some(id => !id.includes('temp') && !id.includes('loading'))) {
+        issues.push(`aria-describedby references potentially missing elements: ${missingIds.join(', ')}`);
+      } else {
+        warnings.push(`aria-describedby references elements that may be dynamically loaded: ${missingIds.join(', ')}`);
+      }
+    }
   }
   
-  if (ariaAttrs['aria-labelledby'] && !document.getElementById(ariaAttrs['aria-labelledby'])) {
-    issues.push('aria-labelledby references non-existent element');
+  if (ariaAttrs['aria-labelledby']) {
+    const referencedIds = ariaAttrs['aria-labelledby'].split(/\s+/);
+    const missingIds = referencedIds.filter(id => {
+      const referencedElement = document.getElementById(id);
+      return !referencedElement && !id.includes('-dynamic-') && !id.includes('-shadow-');
+    });
+    
+    if (missingIds.length > 0) {
+      if (missingIds.some(id => !id.includes('temp') && !id.includes('loading'))) {
+        issues.push(`aria-labelledby references potentially missing elements: ${missingIds.join(', ')}`);
+      } else {
+        warnings.push(`aria-labelledby references elements that may be dynamically loaded: ${missingIds.join(', ')}`);
+      }
+    }
+  }
+  
+  // Validate ARIA roles if present
+  const role = element.getAttribute('role');
+  if (role) {
+    const validRoles = [
+      'alert', 'alertdialog', 'application', 'article', 'banner', 'button', 'cell', 'checkbox',
+      'columnheader', 'combobox', 'complementary', 'contentinfo', 'definition', 'dialog',
+      'directory', 'document', 'feed', 'figure', 'form', 'grid', 'gridcell', 'group',
+      'heading', 'img', 'link', 'list', 'listbox', 'listitem', 'log', 'main', 'marquee',
+      'math', 'menu', 'menubar', 'menuitem', 'menuitemcheckbox', 'menuitemradio', 'navigation',
+      'none', 'note', 'option', 'presentation', 'progressbar', 'radio', 'radiogroup',
+      'region', 'row', 'rowgroup', 'rowheader', 'scrollbar', 'search', 'searchbox',
+      'separator', 'slider', 'spinbutton', 'status', 'switch', 'tab', 'table', 'tablist',
+      'tabpanel', 'term', 'textbox', 'timer', 'toolbar', 'tooltip', 'tree', 'treegrid',
+      'treeitem'
+    ];
+    
+    if (!validRoles.includes(role.toLowerCase())) {
+      issues.push(`Invalid ARIA role: "${role}"`);
+    }
   }
   
   return {
     valid: issues.length === 0,
     issues,
+    warnings,
     attributes: ariaAttrs
   };
 }

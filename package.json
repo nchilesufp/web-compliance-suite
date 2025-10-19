@@ -1,0 +1,47 @@
+{
+  "name": "accessibility-audit-tool",
+  "version": "1.0.0",
+  "description": "Comprehensive accessibility audit tool that crawls websites and generates detailed reports",
+  "main": "accessibility-audit.js",
+  "type": "module",
+  "bin": {
+    "accessibility-audit": "./accessibility-audit.js"
+  },
+  "scripts": {
+    "start": "node accessibility-audit.js",
+    "test": "node accessibility-audit.js https://example.com --max-pages 3",
+    "test-example": "node accessibility-audit.js https://example.com --max-pages 3 --verbose",
+    "install-global": "npm install -g .",
+    "schedule": "node scripts/schedule-run.js",
+    "build:index": "node scripts/build-index.js"
+  },
+  "keywords": [
+    "accessibility",
+    "audit",
+    "wcag",
+    "a11y",
+    "automation",
+    "security",
+    "crawler"
+  ],
+  "author": "Accessibility Audit Tool",
+  "license": "MIT",
+  "dependencies": {
+    "playwright": "^1.40.0",
+    "csv-writer": "^1.6.0",
+    "commander": "^11.1.0",
+    "chalk": "^4.1.2",
+    "ora": "^5.4.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/accessibility-audit-tool.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/accessibility-audit-tool/issues"
+  },
+  "homepage": "https://github.com/your-username/accessibility-audit-tool#readme"
+}

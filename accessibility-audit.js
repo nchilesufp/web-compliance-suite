@@ -31,6 +31,14 @@ program
   .option('--max-memory <number>', 'Maximum memory usage in MB (default: 500)', '500')
   .option('--level <level>', 'WCAG compliance level (AA or AAA, default: AA)', 'AA')
   .option('--include-external', 'Include external links in crawling (default: false)', false)
+  .option('--spa-discovery', 'Enable SPA-friendly link discovery (role=link, data-href, onclick)', false)
+  .option('--rescan-wait <number>', 'Wait time in ms after load before extracting links (default: 1500)', '1500')
+  .option('--link-wait <number>', 'Max time in ms to wait for anchors to appear (default: 3000)', '3000')
+  .option('--sitemap [url]', 'Seed crawl from sitemap.xml (provide URL or omit to autodetect)', false)
+  .option('--keep-query', 'Keep query parameters when deduplicating links', false)
+  .option('--include-subdomains', 'Treat subdomains as internal (default: false)', false)
+  .option('--extra-discovery', 'Enable extra discovery (scroll + hover + noscript parsing)', false)
+  .option('--no-nav-prefetch', 'Disable nav prefetch fallback (enabled by default)', false)
   .option('--skip-images', 'Skip image accessibility checks (default: false)', false)
   .option('--skip-contrast', 'Skip color contrast checks (default: false)', false)
   .option('--format <format>', 'Output format (all, summary, detailed, json, default: all)', 'all')
@@ -68,6 +76,7 @@ async function runAudit(url, options) {
     const timeout = validateNumericInput(options.timeout, 5000, 120000, 30000);
     const rateLimit = validateNumericInput(options.rateLimit, 1, 50, 5);
     const maxMemory = validateNumericInput(options.maxMemory, 100, 2000, 500);
+  const linkWaitMs = validateNumericInput(options.linkWait, 0, 15000, 3000);
 
     // Validate WCAG level
     const wcagLevel = ['AA', 'AAA'].includes(options.level.toUpperCase()) ? options.level.toUpperCase() : 'AA';
@@ -86,6 +95,7 @@ async function runAudit(url, options) {
     console.log(`Format: ${chalk.cyan(options.format)}`);
     console.log(`Rate Limit: ${chalk.cyan(rateLimit)} req/sec`);
     console.log(`Memory Limit: ${chalk.cyan(maxMemory)}MB`);
+  if (linkWaitMs > 0) console.log(`Link Wait: ${chalk.cyan(linkWaitMs)}ms`);
     
     if (options.skipImages) console.log(chalk.yellow('⚠️  Skipping image checks'));
     if (options.skipContrast) console.log(chalk.yellow('⚠️  Skipping contrast checks'));
@@ -116,11 +126,67 @@ async function runAudit(url, options) {
     const crawler = new WebCrawler(browser, {
       maxDepth: depth,
       maxPages: maxPages,
-      includeExternal: options.includeExternal
+      includeExternal: options.includeExternal,
+      spaDiscovery: options.spaDiscovery,
+      rescanWait: validateNumericInput(options.rescanWait, 0, 10000, 1500),
+      keepQuery: options.keepQuery,
+      timeoutMs: timeout,
+      includeSubdomains: options.includeSubdomains,
+      extraDiscovery: options.extraDiscovery,
+      linkWaitMs,
+      navPrefetch: options.navPrefetch,
     });
 
     // Crawl website with rate limiting
     spinner.start('Crawling website...');
+    // Optionally seed from sitemap(s)
+    if (options.sitemap !== false) {
+      const origin = new URL(url).origin;
+      const sitemapTargets = new Set();
+      const context = await browser.newContext();
+      try {
+        // Try robots.txt to discover sitemap locations
+        try {
+          const robotsResp = await context.request.get(`${origin}/robots.txt`, { timeout: 8000 });
+          if (robotsResp.ok()) {
+            const robotsTxt = await robotsResp.text();
+            robotsTxt.split(/\r?\n/).forEach(line => {
+              const m = line.match(/^\s*Sitemap:\s*(\S+)/i);
+              if (m && m[1]) sitemapTargets.add(m[1]);
+            });
+          }
+        } catch {}
+
+        // Fallback to default sitemap.xml if none found or CLI string supplied
+        if (typeof options.sitemap === 'string') {
+          sitemapTargets.add(options.sitemap);
+        } else if (sitemapTargets.size === 0) {
+          sitemapTargets.add(`${origin}/sitemap.xml`);
+        }
+
+        // Fetch and parse sitemap(s)
+        const discovered = new Set();
+        for (const smUrl of sitemapTargets) {
+          try {
+            const resp = await context.request.get(smUrl, { timeout: 10000 });
+            if (!resp.ok()) continue;
+            const body = await resp.text();
+            // Collect <loc> entries; handle both index and urlset
+            const locs = Array.from(body.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/gi)).map(m => m[1]);
+            locs.forEach(u => discovered.add(u));
+          } catch {}
+        }
+
+        if (discovered.size > 0) {
+          crawler.seedUrls(Array.from(discovered));
+        }
+      } catch (e) {
+        if (options.verbose) console.warn('Sitemap seeding skipped:', e.message);
+      } finally {
+        await context.close();
+      }
+    }
+
     const urls = await crawler.crawl(url);
     const crawlStats = crawler.getStatistics();
     spinner.succeed(`Crawled ${urls.length} pages`);
@@ -130,6 +196,22 @@ async function runAudit(url, options) {
       console.log(`  - Successful pages: ${crawlStats.successfulPages}`);
       console.log(`  - Error pages: ${crawlStats.errorPages}`);
       console.log(`  - Total links found: ${crawlStats.totalLinksFound}`);
+      console.log('');
+      const results = crawler.getResults();
+      results.forEach(r => {
+        if (r.status === 'error') {
+          console.log(chalk.yellow(`  ! Crawl error: ${r.url} - ${r.error || 'unknown error'}`));
+        } else {
+          console.log(chalk.gray(`  - ${r.url} (${r.linkCount} links) ${r.title ? 'title: ' + r.title : ''}`));
+          if (r.linkCount === 0 && r.snapshotPath) {
+            console.log(chalk.gray(`      snapshot: ${r.snapshotPath}`));
+          }
+          if (r.linkSamples && r.linkSamples.length) {
+            const sampleStr = r.linkSamples.slice(0, 3).join(', ');
+            console.log(chalk.gray(`      samples: ${sampleStr}`));
+          }
+        }
+      });
       console.log('');
     }
 
@@ -166,10 +248,7 @@ async function runAudit(url, options) {
       try {
         const page = await browser.newPage();
         
-        // Set security headers
-        await page.setExtraHTTPHeaders({
-          'User-Agent': 'AccessibilityAuditTool/1.0.0'
-        });
+        // Use default browser headers; some sites serve different content to custom UAs
         
         await page.goto(pageUrl, { 
           waitUntil: 'networkidle', 

@@ -1,0 +1,593 @@
+{
+  "metadata": {
+    "domain": "www.prowood.com",
+    "timestamp": "2025-10-19T15:40:47.426Z",
+    "pagesAudited": 24,
+    "auditDuration": 259651
+  },
+  "overall": {
+    "totalIssues": 1697,
+    "criticalIssues": 8,
+    "highPriorityIssues": 10,
+    "mediumPriorityIssues": 826,
+    "lowPriorityIssues": 853,
+    "passes": 780,
+    "complianceLevel": "Needs Improvement"
+  },
+  "byCategory": {
+    "semanticHTML": {
+      "total": 24,
+      "issues": 27
+    },
+    "colorContrast": {
+      "total": 24,
+      "issues": 6
+    },
+    "ariaLabels": {
+      "total": 24,
+      "issues": 406
+    },
+    "keyboardNavigation": {
+      "total": 24,
+      "issues": 0
+    },
+    "images": {
+      "total": 24,
+      "issues": 0
+    },
+    "focusManagement": {
+      "total": 24,
+      "issues": 0
+    },
+    "touchTargets": {
+      "total": 24,
+      "issues": 1224
+    },
+    "focusOrder": {
+      "total": 24,
+      "issues": 24
+    },
+    "visionSimulation": {
+      "total": 24,
+      "issues": 0
+    },
+    "manualReview": {
+      "total": 24,
+      "issues": 10
+    }
+  },
+  "byPage": [
+    {
+      "url": "https://www.prowood.com/",
+      "title": "ProWood Pressure-Treated Lumber Products & More",
+      "summary": {
+        "totalIssues": 49,
+        "criticalIssues": 0,
+        "warnings": 24,
+        "passes": 54,
+        "complianceLevel": "WCAG AA Compliant"
+      },
+      "issues": {
+        "total": 59,
+        "critical": 0,
+        "high": 10,
+        "medium": 24,
+        "low": 25,
+        "passes": 29
+      }
+    },
+    {
+      "url": "https://www.prowood.com/contact",
+      "title": "Contact ProWood Today",
+      "summary": {
+        "totalIssues": 97,
+        "criticalIssues": 0,
+        "warnings": 58,
+        "passes": 69,
+        "complianceLevel": "WCAG AA Compliant"
+      },
+      "issues": {
+        "total": 97,
+        "critical": 0,
+        "high": 0,
+        "medium": 58,
+        "low": 39,
+        "passes": 30
+      }
+    },
+    {
+      "url": "https://www.prowood.com/dealers",
+      "title": "Discover How ProWood Supports Our Dealers",
+      "summary": {
+        "totalIssues": 47,
+        "criticalIssues": 0,
+        "warnings": 22,
+        "passes": 57,
+        "complianceLevel": "WCAG AA Compliant"
+      },
+      "issues": {
+        "total": 47,
+        "critical": 0,
+        "high": 0,
+        "medium": 22,
+        "low": 25,
+        "passes": 32
+      }
+    },
+    {
+      "url": "https://www.prowood.com/products",
+      "title": "ProWood Products for your Project",
+      "summary": {
+        "totalIssues": 52,
+        "criticalIssues": 3,
+        "warnings": 24,
+        "passes": 63,
+        "complianceLevel": "Needs Improvement"
+      },
+      "issues": {
+        "total": 52,
+        "critical": 3,
+        "high": 0,
+        "medium": 24,
+        "low": 25,
+        "passes": 38
+      }
+    },
+    {
+      "url": "https://www.prowood.com/treatment-method/fr",
+      "title": "ProWood Fire-Retardant Lumber Lumber",
+      "summary": {
+        "totalIssues": 58,
+        "criticalIssues": 0,
+        "warnings": 33,
+        "passes": 61,
+        "complianceLevel": "WCAG AA Compliant"
+      },
+      "issues": {
+        "total": 58,
+        "critical": 0,
+        "high": 0,
+        "medium": 33,
+        "low": 25,
+        "passes": 36
+      }
+    },
+    {
+      "url": "https://www.prowood.com/treatment-method/pressure-treated",
+      "title": "ProWood Pressure-Treated Lumber Lumber",
+      "summary": {
+        "totalIssues": 54,
+        "criticalIssues": 0,
+        "warnings": 29,
+        "passes": 62,
+        "complianceLevel": "WCAG AA Compliant"
+      },
+      "issues": {
+        "total": 54,
+        "critical": 0,
+        "high": 0,
+        "medium": 29,
+        "low": 25,
+        "passes": 37
+      }
+    },
+    {
+      "url": "https://www.prowood.com/treatment-method/color-treated",
+      "title": "ProWood Color-Treated Lumber Lumber",
+      "summary": {
+        "totalIssues": 49,
+        "criticalIssues": 0,
+        "warnings": 24,
+        "passes": 62,
+        "complianceLevel": "WCAG AA Compliant"
+      },
+      "issues": {
+        "total": 49,
+        "critical": 0,
+        "high": 0,
+        "medium": 24,
+        "low": 25,
+        "passes": 37
+      }
+    },
+    {
+      "url": "https://www.prowood.com/treatment-method/kdat",
+      "title": "ProWood KDAT Lumber",
+      "summary": {
+        "totalIssues": 48,
+        "criticalIssues": 0,
+        "warnings": 23,
+        "passes": 61,
+        "complianceLevel": "WCAG AA Compliant"
+      },
+      "issues": {
+        "total": 48,
+        "critical": 0,
+        "high": 0,
+        "medium": 23,
+        "low": 25,
+        "passes": 36
+      }
+    },
+    {
+      "url": "https://www.prowood.com/treatment-method/borate",
+      "title": "ProWood Borate Lumber",
+      "summary": {
+        "totalIssues": 49,
+        "criticalIssues": 0,
+        "warnings": 24,
+        "passes": 61,
+        "complianceLevel": "WCAG AA Compliant"
+      },
+      "issues": {
+        "total": 49,
+        "critical": 0,
+        "high": 0,
+        "medium": 24,
+        "low": 25,
+        "passes": 36
+      }
+    },
+    {
+      "url": "https://www.prowood.com/end-tags",
+      "title": "Understanding End Tags",
+      "summary": {
+        "totalIssues": 47,
+        "criticalIssues": 0,
+        "warnings": 22,
+        "passes": 53,
+        "complianceLevel": "WCAG AA Compliant"
+      },
+      "issues": {
+        "total": 47,
+        "critical": 0,
+        "high": 0,
+        "medium": 22,
+        "low": 25,
+        "passes": 28
+      }
+    },
+    {
+      "url": "https://www.prowood.com/treated-lumber",
+      "title": "ProWood Pressure Treated Lumber is Built to Last",
+      "summary": {
+        "totalIssues": 64,
+        "criticalIssues": 0,
+        "warnings": 24,
+        "passes": 77,
+        "complianceLevel": "WCAG AA Compliant"
+      },
+      "issues": {
+        "total": 64,
+        "critical": 0,
+        "high": 0,
+        "medium": 24,
+        "low": 40,
+        "passes": 37
+      }
+    },
+    {
+      "url": "https://www.prowood.com/resources",
+      "title": "ProWood Product Resources",
+      "summary": {
+        "totalIssues": 159,
+        "criticalIssues": 1,
+        "warnings": 132,
+        "passes": 64,
+        "complianceLevel": "Needs Improvement"
+      },
+      "issues": {
+        "total": 159,
+        "critical": 1,
+        "high": 0,
+        "medium": 132,
+        "low": 26,
+        "passes": 38
+      }
+    },
+    {
+      "url": "https://www.prowood.com/lumber-dimensions",
+      "title": "Nominal vs Actual Lumber Dimensions",
+      "summary": {
+        "totalIssues": 48,
+        "criticalIssues": 0,
+        "warnings": 22,
+        "passes": 58,
+        "complianceLevel": "WCAG AA Compliant"
+      },
+      "issues": {
+        "total": 48,
+        "critical": 0,
+        "high": 0,
+        "medium": 22,
+        "low": 26,
+        "passes": 32
+      }
+    },
+    {
+      "url": "https://www.prowood.com/baluster-calculator",
+      "title": "Baluster Calculator",
+      "summary": {
+        "totalIssues": 53,
+        "criticalIssues": 0,
+        "warnings": 26,
+        "passes": 60,
+        "complianceLevel": "WCAG AA Compliant"
+      },
+      "issues": {
+        "total": 53,
+        "critical": 0,
+        "high": 0,
+        "medium": 26,
+        "low": 27,
+        "passes": 33
+      }
+    },
+    {
+      "url": "https://www.prowood.com/lumber-grades",
+      "title": "How to Choose the Right Lumber Grade",
+      "summary": {
+        "totalIssues": 63,
+        "criticalIssues": 1,
+        "warnings": 22,
+        "passes": 72,
+        "complianceLevel": "Needs Improvement"
+      },
+      "issues": {
+        "total": 63,
+        "critical": 1,
+        "high": 0,
+        "medium": 22,
+        "low": 40,
+        "passes": 32
+      }
+    },
+    {
+      "url": "https://www.prowood.com/videos",
+      "title": "Videos",
+      "summary": {
+        "totalIssues": 49,
+        "criticalIssues": 0,
+        "warnings": 22,
+        "passes": 54,
+        "complianceLevel": "WCAG AA Compliant"
+      },
+      "issues": {
+        "total": 49,
+        "critical": 0,
+        "high": 0,
+        "medium": 22,
+        "low": 27,
+        "passes": 27
+      }
+    },
+    {
+      "url": "https://www.prowood.com/faq",
+      "title": "Frequently Asked Questions About ProWood",
+      "summary": {
+        "totalIssues": 47,
+        "criticalIssues": 0,
+        "warnings": 22,
+        "passes": 54,
+        "complianceLevel": "WCAG AA Compliant"
+      },
+      "issues": {
+        "total": 47,
+        "critical": 0,
+        "high": 0,
+        "medium": 22,
+        "low": 25,
+        "passes": 29
+      }
+    },
+    {
+      "url": "https://www.prowood.com/about",
+      "title": "About",
+      "summary": {
+        "totalIssues": 47,
+        "criticalIssues": 0,
+        "warnings": 22,
+        "passes": 59,
+        "complianceLevel": "WCAG AA Compliant"
+      },
+      "issues": {
+        "total": 47,
+        "critical": 0,
+        "high": 0,
+        "medium": 22,
+        "low": 25,
+        "passes": 34
+      }
+    },
+    {
+      "url": "https://www.prowood.com/find-a-dealer",
+      "title": "Find a Dealer",
+      "summary": {
+        "totalIssues": 204,
+        "criticalIssues": 0,
+        "warnings": 29,
+        "passes": 209,
+        "complianceLevel": "WCAG AA Compliant"
+      },
+      "issues": {
+        "total": 204,
+        "critical": 0,
+        "high": 0,
+        "medium": 29,
+        "low": 175,
+        "passes": 34
+      }
+    },
+    {
+      "url": "https://www.prowood.com/blog",
+      "title": "Error",
+      "summary": {
+        "totalIssues": 0,
+        "criticalIssues": 0,
+        "warnings": 0,
+        "passes": 0
+      },
+      "issues": {
+        "total": 0,
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "passes": 0
+      }
+    },
+    {
+      "url": "https://www.prowood.com/c/trueframe-joist",
+      "title": "TrueFrame Joist",
+      "summary": {
+        "totalIssues": 45,
+        "criticalIssues": 0,
+        "warnings": 29,
+        "passes": 48,
+        "complianceLevel": "WCAG AA Compliant"
+      },
+      "issues": {
+        "total": 45,
+        "critical": 0,
+        "high": 0,
+        "medium": 29,
+        "low": 16,
+        "passes": 32
+      }
+    },
+    {
+      "url": "https://www.prowood.com/facilities",
+      "title": "Facilities",
+      "summary": {
+        "totalIssues": 122,
+        "criticalIssues": 1,
+        "warnings": 53,
+        "passes": 101,
+        "complianceLevel": "Needs Improvement"
+      },
+      "issues": {
+        "total": 122,
+        "critical": 1,
+        "high": 0,
+        "medium": 53,
+        "low": 68,
+        "passes": 33
+      }
+    },
+    {
+      "url": "https://www.prowood.com/terms-of-use",
+      "title": "Terms of Use",
+      "summary": {
+        "totalIssues": 47,
+        "criticalIssues": 0,
+        "warnings": 22,
+        "passes": 51,
+        "complianceLevel": "WCAG AA Compliant"
+      },
+      "issues": {
+        "total": 47,
+        "critical": 0,
+        "high": 0,
+        "medium": 22,
+        "low": 25,
+        "passes": 26
+      }
+    },
+    {
+      "url": "https://www.prowood.com/contact/marketing-collaboration",
+      "title": "Marketing Collaboration",
+      "summary": {
+        "totalIssues": 123,
+        "criticalIssues": 1,
+        "warnings": 78,
+        "passes": 71,
+        "complianceLevel": "Needs Improvement"
+      },
+      "issues": {
+        "total": 123,
+        "critical": 1,
+        "high": 0,
+        "medium": 78,
+        "low": 44,
+        "passes": 27
+      }
+    },
+    {
+      "url": "https://www.prowood.com/contact/become-a-dealer",
+      "title": "Become a Dealer",
+      "summary": {
+        "totalIssues": 66,
+        "criticalIssues": 1,
+        "warnings": 40,
+        "passes": 52,
+        "complianceLevel": "Needs Improvement"
+      },
+      "issues": {
+        "total": 66,
+        "critical": 1,
+        "high": 0,
+        "medium": 40,
+        "low": 25,
+        "passes": 27
+      }
+    }
+  ],
+  "trends": {
+    "mostCommonIssues": [
+      {
+        "type": "missing_accessible_name",
+        "count": 406
+      },
+      {
+        "type": "heading_skip_recommendation",
+        "count": 24
+      },
+      {
+        "type": "missing_main",
+        "count": 2
+      },
+      {
+        "type": "missing_nav",
+        "count": 1
+      }
+    ],
+    "pagesWithMostIssues": [
+      {
+        "url": "https://www.prowood.com/find-a-dealer",
+        "title": "Find a Dealer",
+        "issueCount": 204
+      },
+      {
+        "url": "https://www.prowood.com/resources",
+        "title": "ProWood Product Resources",
+        "issueCount": 159
+      },
+      {
+        "url": "https://www.prowood.com/contact/marketing-collaboration",
+        "title": "Marketing Collaboration",
+        "issueCount": 123
+      },
+      {
+        "url": "https://www.prowood.com/facilities",
+        "title": "Facilities",
+        "issueCount": 122
+      },
+      {
+        "url": "https://www.prowood.com/contact",
+        "title": "Contact ProWood Today",
+        "issueCount": 97
+      }
+    ],
+    "categoryDistribution": {
+      "semanticHTML": 27,
+      "ariaLabels": 406,
+      "keyboardNavigation": 0,
+      "images": 0,
+      "focusManagement": 0,
+      "touchTargets": 1224,
+      "focusOrder": 24,
+      "visionSimulation": 0,
+      "manualReview": 10
+    }
+  }
+}
